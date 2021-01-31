@@ -130,16 +130,20 @@ def movePlayer(key, p1):
 
 def checkCollision(p1):
     isCollision = False
+    whichGate = None
     for gate in gates:
         if p1.__get_x__() > gate.__getp1x__() and p1.__get_x__() < gate.__getp2x__() and p1.__get_y__() > gate.__getp1y__() and p1.__get_y__() < gate.__getp2y__():
             print("in gate")
-            return True
+            isCollision = True
+            whichGate = gate
         # if p1.__get_y__() > gate.__getp1y__() or p1.__get_y__() < gate.__getp2y__():
         #     print("in gate")
         #     return True
         else:
             print("not in gate")
-            return False
+            isCollision = False
+
+        return isCollision,whichGate
 
 def main(win):
     p1_color = WHITE
@@ -217,7 +221,7 @@ def main(win):
                 print(event.key)
                 movePlayer(event.key, p1)
 
-                isCrossed, whichGate = checkCollision(p1)
+                isCrossed,whichGate = checkCollision(p1)
 
                 if isCrossed == False:
                     p1_color = WHITE
