@@ -37,3 +37,5 @@ Making the game a functional webpage
 
 ## Final Notes
 We had such a great time at this hackathon. It was a great learning experience and our team had so much fun together. We hope to continue to implement future changes to the game and make it more functional. We just hope that Dots and Gates will help future quantum leaders understand the concept of quantum gates. 
+
+## [Google Slides to Presentation](https://docs.google.com/presentation/d/1uAgb0SkXuQMnRCIMYesCapIntERX2IAURCYmBH4Qz0g/edit?usp=sharing)
