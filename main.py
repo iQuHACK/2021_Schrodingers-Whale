@@ -1,13 +1,55 @@
-#Base Code Credits to Stanely Godfrey
-#https://github.com/stanley-godfrey/Tron-Pygame/
-
 import pygame
-import time
-pygame.init()
+from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit, Aer, execute
 
-BLACK = (0, 0, 0)  # colours for use in window
-P1_COLOUR = (0, 255, 255)  # player 1 trail colour
-P2_COLOUR = (255, 0, 255)  # player 2 trail colour
+pygame.font.init()
+
+distance = 800
+display = pygame.display.set_mode((distance, distance))
+pygame.display.set_caption("Hackathon")
+
+font = pygame.font.SysFont('comicsans', 40)
+
+
+
+# colors
+GREY = (192, 192, 192) 
+WHITE = (255, 255, 255)  
+ROSE = (255, 51, 153)  
+TEAL = (0, 0, 255) 
+BLACK = (0, 0, 0)  
+SKY = (158, 255, 250)  
+LIME = (178, 250, 102) 
+LAVENDER = (178, 102, 255)  
+RED = (255,0,0)
+BLUE = (0,0,255)
+PURPLE = (204, 0, 204)
+colors = [RED, BLUE, PURPLE]
+FPS = 60
+
+# Store gate images
+gate_images = []
+gates = []
+
+# Quantum Circuit
+qreg_q = QuantumRegister(1, 'q')
+creg_c = ClassicalRegister(1, 'c')
+circuit = QuantumCircuit(qreg_q, creg_c)
+backend_sim = Aer.get_backend('qasm_simulator')
+
+# Tracks variables for quantum gates and state
+isHadamard = False
+isX = False
+isMeasured = False
+qState = "|0>"
+
+counts = {}
+
+
+def draw(win):
+    red_health_text = font.render("Current Qubit: " + qState, 1, WHITE)
+    win.blit(red_health_text, (20, 10))
+
+    pygame.display.update()
 
 
 class Player:
@@ -19,148 +61,201 @@ class Player:
         self.y = y  # player y coord
         self.speed = 1  # player speed
         self.bearing = b  # player direction
-        self.colour = c
-        self.boost = False  # is boost active
-        self.start_boost = time.time()  # used to control boost length
-        self.boosts = 3
-        self.rect = pygame.Rect(self.x - 1, self.y - 1, 2, 2)  # player rect object
+        self.color = c
+        # self.isTunnel = False  # is boost active
+        # self.startTunnel = time.time()  # used to control boost length
+        # self.tunnels = 2
+        self.rect = pygame.Rect(self.x - 0, self.y - 1, 4, 2)  # player rect object
 
+    def __get_x__(self):
+        return self.x
+    def __get_y__(self):
+        return self.y
+    
     def __draw__(self):
         """
         method for drawing player
         """
-        self.rect = pygame.Rect(self.x - 1, self.y - 1, 2, 2)  # redefines rect
-        pygame.draw.rect(screen, self.colour, self.rect, 0)  # draws player onto screen
+        self.rect = pygame.Rect(self.x - 1, self.y - 1, 4, 2)  # redefines rect
+        pygame.draw.rect(display, self.color, self.rect, 0)  # draws player onto screen
 
     def __move__(self):
         """
         method for moving the player
         """
-        if not self.boost:  # player isn't currently boosting
-            self.x += self.bearing[0]
-            self.y += self.bearing[1]
+        print("move method")
+        self.x += self.bearing[0]
+        self.y += self.bearing[1]
+
+
+class Gate:
+    def __init__(self,x,y,width,height,imgurl):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.imgurl = imgurl
+
+        self.gate = pygame.image.load(imgurl)
+    
+    def __returnimg__(self):
+        return self.gate
+
+    def __getp1x__(self): 
+        print(self.x)
+        return self.x
+    def __getp1y__(self): 
+        print(self.y)
+        return self.y
+    def __getp2x__(self): 
+        print(self.x + self.width)
+        return self.x + self.width
+    def __getp2y__(self): 
+        print(self.y + self.height)
+        return self.y + self.height
+
+
+def movePlayer(key, p1):
+    if key == pygame.K_LEFT:  # Left
+        p1.bearing = (-5,0)
+    elif key == pygame.K_RIGHT:  # right
+        p1.bearing = (5,0)
+    elif key == pygame.K_UP:  # up
+        p1.bearing = (0,-5)
+    elif key == pygame.K_DOWN:  # down
+        p1.bearing = (0,5)
+
+# yLimit = 400
+# xLimit 
+
+def checkCollision(p1):
+    isCollision = False
+    for gate in gates:
+        if p1.__get_x__() > gate.__getp1x__() and p1.__get_x__() < gate.__getp2x__() and p1.__get_y__() > gate.__getp1y__() and p1.__get_y__() < gate.__getp2y__():
+            print("in gate")
+            return True
+        # if p1.__get_y__() > gate.__getp1y__() or p1.__get_y__() < gate.__getp2y__():
+        #     print("in gate")
+        #     return True
         else:
-            self.x += self.bearing[0] * 2
-            self.y += self.bearing[1] * 2
+            print("not in gate")
+            return False
 
-    def __boost__(self):
-        """
-        starts the player boost
-        """
-        if self.boosts > 0:
-            self.boosts -= 1
-            self.boost = True
-            self.start_boost = time.time()
+def main(win):
+    p1_color = WHITE
+    p1 = Player(250, 250, (0, 2), p1_color)
+    paths = list()
+    paths.append((p1.rect, '1'))
 
+    imgWidth = 250
+    imgHeight = 200
+    img_x = 30
+    img_y = 400
 
-def new_game():
-    new_p1 = Player(50, height / 2, (2, 0), P1_COLOUR)
-    new_p2 = Player(width - 50, height / 2, (-2, 0), P2_COLOUR)
-    return new_p1, new_p2
+    gate_h = Gate(img_x,img_y,imgWidth,imgHeight,'Gate_H.png')
+    gates.append(gate_h)
+    gate_images.append(gate_h.__returnimg__())
+    gate_x = Gate(img_x,img_y,imgWidth,imgHeight,'Gate_X.png')
+    gates.append(gate_x)
+    gate_images.append(gate_x.__returnimg__())
+    gate_m = Gate(img_x,img_y,imgWidth,imgHeight,'Gate_M.png')
+    gates.append(gate_m)
+    gate_images.append(gate_m.__returnimg__())
 
+    run = True
+    clock = pygame.time.Clock()
+    while run:
+        clock.tick(FPS)
+        draw(win)
 
-width, height = 600, 660  # window dimensions
-offset = height - width  # vertical space at top of window
-screen = pygame.display.set_mode((width, height))  # creates window
-pygame.display.set_caption("Tron")  # sets window title
+        # Tracks Quantum Gate Collision
+        #for i in range(len(gates)):
+            #if gates[i] == "h":
+        #         circuit.h(qreg_q[0])
+        #         if isHadamard is False:
+        #             isHadamard = True
+        #         if isHadamard is True:
+        #             isHadamard = False
+        #     #elif gates[i] == "x":
+        #         circuit.x(qreg_q[0])
+        #         if isX is False:
+        #             isX = True
+        #         if isX is True:
+        #             isX = False
+        #     #elif gates[i] == "m":
+        #         circuit.measure(qreg_q[0],creg_c[0])
+        #         isMeasured = True
+        
+        if isHadamard is True and isX is True:
+            qState = "|->"
+        elif isHadamard is True and isX is False:
+            qState = "|+>"
+        elif isHadamard is False and isX is True:
+            qState = "|1>"
+        else:
+            qState = "|0>"
+        
+        # # if isMeasured is True:
+        #      sim = execute(circuit,backend_sim, shots=1)
+        #      result = sim.result()
+        #      counts = result.get_counts(circuit)
 
-font = pygame.font.Font(None, 72)
+        for img in gate_images:
+            img = pygame.transform.scale(img, (imgWidth, imgHeight))
+            display.blit(img, (img_x, img_y))
+            img_x += imgWidth + 20
 
-clock = pygame.time.Clock()  # used to regulate FPS
-check_time = time.time()  # used to check collisions with rects
+        for event in pygame.event.get():  # check through all the events that have happened
+            print("start")
 
-objects = list()  # list of all the player objects
-path = list()  # list of all the path rects in the game
-p1 = Player(50, (height- offset) / 2, (2, 0), P1_COLOUR)  # creates player
-p2 = Player(width - 50, (height- offset) / 2, (-2, 0), P2_COLOUR)
-objects.append(p1)
-path.append((p1.rect, '1'))
-objects.append(p2)
-path.append((p2.rect, '2'))
-
-player_score = [0, 0]  # current player score
-
-wall_rects = [pygame.Rect([0, offset, 15, height]) , pygame.Rect([0, offset, width, 15]),\
-              pygame.Rect([width - 15, offset, 15, height]),\
-              pygame.Rect([0, height - 15, width, 15])]  # outer walls of window
-
-done = False
-new = False
-
-while not done:
-    for event in pygame.event.get():  # gets all event in last tick
-        if event.type == pygame.QUIT:  # close button pressed
-            done = True
-        elif event.type == pygame.KEYDOWN:  # keyboard key pressed
-            # === Player 1 === #
-            if event.key == pygame.K_w:
-                objects[0].bearing = (0, -2)
-            elif event.key == pygame.K_s:
-                objects[0].bearing = (0, 2)
-            elif event.key == pygame.K_a:
-                objects[0].bearing = (-2, 0)
-            elif event.key == pygame.K_d:
-                objects[0].bearing = (2, 0)
-            elif event.key == pygame.K_TAB:
-                objects[0].__boost__()
-            # === Player 2 === #
-            if event.key == pygame.K_UP:
-                objects[1].bearing = (0, -2)
-            elif event.key == pygame.K_DOWN:
-                objects[1].bearing = (0, 2)
-            elif event.key == pygame.K_LEFT:
-                objects[1].bearing = (-2, 0)
-            elif event.key == pygame.K_RIGHT:
-                objects[1].bearing = (2, 0)
-            elif event.key == pygame.K_RSHIFT:
-                objects[1].__boost__()
-
-    screen.fill(BLACK)  # clears the screen
-
-    for r in wall_rects: pygame.draw.rect(screen, (42, 42, 42), r, 0)  # draws the walls
-
-    for o in objects:
-        if time.time() - o.start_boost >= 0.5:  # limits boost to 0.5s
-            o.boost = False
-
-        if (o.rect, '1') in path or (o.rect, '2') in path \
-           or o.rect.collidelist(wall_rects) > -1:  # collided with path or wall
-            # prevent player from hitting the path they just made
-            if (time.time() - check_time) >= 0.1:
-                check_time = time.time()
-
-                if o.colour == P1_COLOUR:
-                    player_score[1] += 1
-                else: player_score[0] += 1
-
-                new = True
-                new_p1, new_p2 = new_game()
-                objects = [new_p1, new_p2]
-                path = [(p1.rect, '1'), (p2.rect, '2')]
+            if event.type == pygame.QUIT:
+                run = False
                 break
-        else:  # not yet traversed
-            path.append((o.rect, '1')) if o.colour == P1_COLOUR else path.append((o.rect, '2'))
 
-        o.__draw__()
-        o.__move__()
+            if event.type == pygame.KEYDOWN:
+                print("key down")
+                print(event.key)
+                movePlayer(event.key, p1)
 
-    for r in path:
-        print(r)
-        if new is True:  # empties the path - needs to be here to prevent graphical glitches
-            path = []
-            new = False
-            break
-        if r[1] == '1': pygame.draw.rect(screen, P1_COLOUR, r[0], 0)
-        else: pygame.draw.rect(screen, P2_COLOUR, r[0], 0)
+                isCrossed, whichGate = checkCollision(p1)
 
-    # display the current score on the screen
-    score_text = font.render('{0} : {1}'.format(player_score[0], player_score[1]), 1, (255, 153, 51))
-    score_text_pos = score_text.get_rect()
-    score_text_pos.centerx = int(width / 2)
-    score_text_pos.centery = int(offset / 2)
-    screen.blit(score_text, score_text_pos)
+                if isCrossed == False:
+                    p1_color = WHITE
+                else:
+                    if whichGate == gate[0]:
+                        p1_color = ROSE
+                         circuit.h(qreg_q[0])
+                        if isHadamard is False:
+                            isHadamard = True
+                        if isHadamard is True:
+                            isHadamard = False
+                    elif whichGate == gate[1]:
+                        p1_color = LIME
+                        circuit.x(qreg_q[0])
+                      if isX is False:
+                          isX = True
+                      if isX is True:
+                          isX = False
+                    elif whichGate == gate[2]:
+                        p1_color = LAVENDER
+                        circuit.measure(qreg_q[0],creg_c[0])
+                        isMeasured = True
+                        if isMeasured is True:
+                            sim = execute(circuit,backend_sim, shots=1)
+                            result = sim.result()
+                            counts = result.get_counts(circuit)
+                
+                p1.__draw__()
+                print("drawn")
+                
+                p1.__move__()
+                print("moved")
 
-    pygame.display.flip()  # flips display
-    clock.tick(60)  # regulates FPS
+            # keyup to stop the continued movement of the line
 
-pygame.quit()
+            # create if-statements for keys pressed -- move the snake in the desired direction
+            # create condition for when the snakes intersect -- end game and print winner
+            
+    pygame.quit()
+
+main(display)

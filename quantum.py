@@ -18,10 +18,10 @@ for i in range(len(gates)):
 
 print(circuit.draw())
 
-backend_sim = Aer.get_backend('statevector_simulator')
+backend_sim = Aer.get_backend('qasm_simulator')
 
 sim = execute(circuit,backend_sim, shots=1)
 result = sim.result()
 counts = result.get_counts(circuit)
 
-print(counts)
+print(counts)m
